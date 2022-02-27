@@ -1,7 +1,6 @@
 // To Do:
 // -Actually do proper error handling (once I know better what that means).
 // -Write some clever tests (once I know how to do that).
-// -Include the chapter title, and possibly a chapter id pattern in saved file.
 // -Currently panics upon finishing successfully, design better
 // -Prompt user to enter address of seed page
 // -Refactor to allow multiple seed pages, possibly allowing user to queue up
@@ -50,13 +49,17 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // Write Chapter 1 to file body.html
     let mut current_body = extract_body(&html_chapter);
+    file.write_all(extract_chapter_header(&html_chapter).unwrap().as_bytes());
     file.write_all(current_body.unwrap().as_bytes());
+    chapter_tail = addr_next_chapter(&html_chapter).unwrap();
+    addr_chapter = format!("{}{}", royal_road, chapter_tail);
 
     // Pattern of the disabled 'Next Chapter' button on the final chapter.
     // This is the pattern which causes the loop below to terminate.
     let final_button = "<button class=\"btn btn-primary col-xs-12\" disabled=\"disabled\">
                             Next <br class=\"visible-xs-block\" />Chapter <i class=\"far fa-chevron-double-right ml-3\"></i>
                         </button>";
+    
     // Rate limiting, chosen arbitrarily
     let sleep_time = time::Duration::from_millis(200);
 
