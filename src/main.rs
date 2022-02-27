@@ -18,7 +18,7 @@ use std::fs;
 use std::io::Write;
 use std::{thread, time};
 
-use web_crawler::{download_seed, html_extract_first_chapter, addr_next_chapter, extract_body, extract_chapter_header};
+use web_crawler::{html_extract_first_chapter, addr_next_chapter, extract_body, extract_chapter_header};
 
 // Given a seed of the pattern <royal_road><path_to_coverpage>, crawl and
 // extract the story text of each chapter as formatted html to a file named 
