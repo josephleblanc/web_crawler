@@ -8,6 +8,7 @@
 // several seed pages or possibly read seed pages from file.
 
 // Stretch Goals/Ideas:
+// -Use concurrency
 // -Can I set this up to run on a cloud server, checking for updates?
 // -This would be nice to have on my phone. How difficult is that to set up?
 // -The next step with this output is to convert to an .epub - how easy is
@@ -18,7 +19,7 @@ use std::fs;
 use std::io::Write;
 use std::{thread, time};
 
-use web_crawler::{download_seed, html_extract_first_chapter, addr_next_chapter, extract_body};
+use web_crawler::{download_seed, html_extract_first_chapter, addr_next_chapter, extract_body, extract_chapter_header};
 
 // Given a seed of the pattern <royal_road><path_to_coverpage>, crawl and
 // extract the story text of each chapter as formatted html to a file named 
@@ -64,6 +65,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         println!("Getting next page: {}", &addr_chapter);
         html_chapter = reqwest::blocking::get(addr_chapter)?.text()?;
         current_body = extract_body(&html_chapter);
+        file.write_all(extract_chapter_header(&html_chapter).unwrap().as_bytes());
         file.write_all(current_body.unwrap().as_bytes());
 
         chapter_tail = addr_next_chapter(&html_chapter).unwrap();

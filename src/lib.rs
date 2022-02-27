@@ -74,3 +74,20 @@ pub fn extract_body(html_text: &str) -> Option<&str> {
     
     Some(&html_text[start_body..end_body])
 }
+
+// Given a chapter html page, extract the chapter header as an html 
+// formatted header.
+pub fn extract_chapter_header(html_text: &str) -> Option<&str> {
+    let header_id_start = "<h1 style=\"margin-top: 10px\" class=\"font-white\">";
+    let header_id_end = "</h1>";
+
+    let start_header = html_text.find(header_id_start)?;
+    println!("start_header:{}", start_header);
+    let end_header = html_text[start_header..].find(header_id_end)? 
+        + start_header
+        + header_id_end.len();
+
+    println!("html_header:{}", &html_text[start_header..end_header]);
+
+    Some(&html_text[start_header..end_header])
+}
