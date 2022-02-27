@@ -1,21 +1,6 @@
 use std::error::Error;
 use std::fs;
 
-pub fn download_seed(seed: &str) -> Result<(), Box<dyn Error>> {
-    if !seed.starts_with("https://www.royalroad.com/fiction/") {
-        panic!("Did not enter a valid royalroad.com address. \
-        Enter an address that starts with https://www.royalroad.com/fiction/");
-    }
-
-    let resp = reqwest::blocking::get(seed)?.text()?;
-    println!("get html from seed: success");
-
-    fs::write("output.html", resp)?;
-    println!("write html to output.html: success");
-
-    Ok(())
-}
-
 // Given the starting page, extract the link to the first chapter.
 // Because the starting page is structured differently than the chapter pages,
 // this needs to be different than the function extracting each following chapter.
