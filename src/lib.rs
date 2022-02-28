@@ -1,6 +1,3 @@
-use std::error::Error;
-use std::fs;
-
 // Given the starting page, extract the link to the first chapter.
 // Because the starting page is structured differently than the chapter pages,
 // this needs to be different than the function extracting each following chapter.

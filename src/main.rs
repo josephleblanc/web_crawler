@@ -40,7 +40,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // Create output file
     // fs::File::create() will truncate file if the file already exists
-    let mut f = fs::File::create("body.html");
+    fs::File::create("body.html")?;
     let mut file = fs::OpenOptions::new()
         .write(true)
         .append(true)
@@ -49,8 +49,8 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // Write Chapter 1 to file body.html
     let mut current_body = extract_body(&html_chapter);
-    file.write_all(extract_chapter_header(&html_chapter).unwrap().as_bytes());
-    file.write_all(current_body.unwrap().as_bytes());
+    file.write_all(extract_chapter_header(&html_chapter).unwrap().as_bytes())?;
+    file.write_all(current_body.unwrap().as_bytes())?;
     chapter_tail = addr_next_chapter(&html_chapter).unwrap();
     addr_chapter = format!("{}{}", royal_road, chapter_tail);
 
@@ -68,8 +68,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         println!("Getting next page: {}", &addr_chapter);
         html_chapter = reqwest::blocking::get(addr_chapter)?.text()?;
         current_body = extract_body(&html_chapter);
-        file.write_all(extract_chapter_header(&html_chapter).unwrap().as_bytes());
-        file.write_all(current_body.unwrap().as_bytes());
+        file.write_all(extract_chapter_header(&html_chapter).unwrap().as_bytes())?;
+        file.write_all(current_body.unwrap().as_bytes())?;
 
         chapter_tail = addr_next_chapter(&html_chapter).unwrap();
         addr_chapter = format!("{}{}", royal_road, chapter_tail);
