@@ -12,7 +12,7 @@ pub fn html_extract_first_chapter(html_text: &str) -> &str {
 
     let next_html_start = next_start_location + first_chapter_link_index;
     let next_html_end = html_text[next_html_start..]
-        .find("\"")
+        .find('\"')
         .expect("No closing \" found for next_html_end")
         + next_html_start;
 
