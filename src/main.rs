@@ -39,7 +39,8 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // Reqwest first cover page and extract link to first chapter
     let first_chapter_html: Html = Html::parse_fragment(&reqwest::blocking::get(seed)?.text()?);
-    let mut chapter_tail: &str = html_extract_first_chapter(&first_chapter_html);
+    let mut chapter_tail: &str = html_extract_first_chapter(&first_chapter_html)
+        .unwrap();
 
     let mut addr_chapter = format!("{}{}", royal_road, chapter_tail);
     let mut html_chapter: Html = Html::parse_fragment(&reqwest::blocking::get(&addr_chapter)?.text()?);
@@ -54,8 +55,11 @@ fn main() -> Result<(), Box<dyn Error>> {
         .unwrap();
 
     // Write Chapter 1 to file body.html
-    let mut current_body: String = extract_body(&html_chapter);
-    file.write_all(extract_chapter_header(&html_chapter).as_bytes())?;
+    let mut current_body: String = extract_body(&html_chapter)
+        .unwrap();
+    file.write_all(extract_chapter_header(&html_chapter)
+                   .unwrap()
+                   .as_bytes())?;
     file.write_all(current_body.as_bytes())?;
     chapter_tail = html_chapter
         .select(&Selector::parse(r#"a[class="btn btn-primary col-xs-12"]"#).unwrap())
@@ -73,13 +77,16 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("before");
     while final_button(&html_chapter) != Some(true) {
         println!("Getting next page: {}", &addr_chapter);
-//        println!("final_button(&html_chapter):{:?}", final_button(&html_chapter));
         html_chapter = Html::parse_fragment(&reqwest::blocking::get(addr_chapter)?.text()?);
-        current_body = extract_body(&html_chapter);
-        file.write_all(extract_chapter_header(&html_chapter).as_bytes())?;
+        current_body = extract_body(&html_chapter)
+            .unwrap();
+        file.write_all(extract_chapter_header(&html_chapter)
+                       .unwrap()
+                       .as_bytes())?;
         file.write_all(current_body.as_bytes())?;
 
-        chapter_tail = addr_next_chapter(&html_chapter);
+        chapter_tail = addr_next_chapter(&html_chapter)
+            .unwrap();
         addr_chapter = format!("{}{}", royal_road, chapter_tail);
 
         thread::sleep(sleep_time);
