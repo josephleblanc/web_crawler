@@ -17,8 +17,14 @@ use std::error::Error;
 use std::fs;
 use std::io::Write;
 use std::{thread, time};
+use scraper::{Html, Selector};
 
-use web_crawler::{html_extract_first_chapter, addr_next_chapter, extract_body, extract_chapter_header};
+use web_crawler::{
+    html_extract_first_chapter, 
+    addr_next_chapter, 
+    extract_body, 
+    extract_chapter_header,
+    final_button};
 
 // Given a seed of the pattern <royal_road><path_to_coverpage>, crawl and
 // extract the story text of each chapter as formatted html to a file named 
@@ -32,11 +38,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     // Reqwest first cover page and extract link to first chapter
-    let first_chapter_html = reqwest::blocking::get(seed)?.text()?;
-    let mut chapter_tail = html_extract_first_chapter(first_chapter_html.as_str());
+    let first_chapter_html: Html = Html::parse_fragment(&reqwest::blocking::get(seed)?.text()?);
+    let mut chapter_tail: &str = html_extract_first_chapter(&first_chapter_html);
 
     let mut addr_chapter = format!("{}{}", royal_road, chapter_tail);
-    let mut html_chapter: String = reqwest::blocking::get(&addr_chapter)?.text()?;
+    let mut html_chapter: Html = Html::parse_fragment(&reqwest::blocking::get(&addr_chapter)?.text()?);
 
     // Create output file
     // fs::File::create() will truncate file if the file already exists
@@ -48,30 +54,32 @@ fn main() -> Result<(), Box<dyn Error>> {
         .unwrap();
 
     // Write Chapter 1 to file body.html
-    let mut current_body = extract_body(&html_chapter);
-    file.write_all(extract_chapter_header(&html_chapter).unwrap().as_bytes())?;
-    file.write_all(current_body.unwrap().as_bytes())?;
-    chapter_tail = addr_next_chapter(&html_chapter).unwrap();
+    let mut current_body: String = extract_body(&html_chapter);
+    file.write_all(extract_chapter_header(&html_chapter).as_bytes())?;
+    file.write_all(current_body.as_bytes())?;
+    chapter_tail = html_chapter
+        .select(&Selector::parse(r#"a[class="btn btn-primary col-xs-12"]"#).unwrap())
+        .next()
+        .unwrap()
+        .value()
+        .attr("href")
+        .unwrap();
     addr_chapter = format!("{}{}", royal_road, chapter_tail);
 
-    // Pattern of the disabled 'Next Chapter' button on the final chapter.
-    // This is the pattern which causes the loop below to terminate.
-    let final_button = "<button class=\"btn btn-primary col-xs-12\" disabled=\"disabled\">
-                            Next <br class=\"visible-xs-block\" />Chapter <i class=\"far fa-chevron-double-right ml-3\"></i>
-                        </button>";
-    
     // Rate limiting, chosen arbitrarily
     let sleep_time = time::Duration::from_millis(200);
 
     // Loop through chapters, extract next link, download contents, save
-    while html_chapter.find(final_button) == None {
+    println!("before");
+    while final_button(&html_chapter) != Some(true) {
         println!("Getting next page: {}", &addr_chapter);
-        html_chapter = reqwest::blocking::get(addr_chapter)?.text()?;
+//        println!("final_button(&html_chapter):{:?}", final_button(&html_chapter));
+        html_chapter = Html::parse_fragment(&reqwest::blocking::get(addr_chapter)?.text()?);
         current_body = extract_body(&html_chapter);
-        file.write_all(extract_chapter_header(&html_chapter).unwrap().as_bytes())?;
-        file.write_all(current_body.unwrap().as_bytes())?;
+        file.write_all(extract_chapter_header(&html_chapter).as_bytes())?;
+        file.write_all(current_body.as_bytes())?;
 
-        chapter_tail = addr_next_chapter(&html_chapter).unwrap();
+        chapter_tail = addr_next_chapter(&html_chapter);
         addr_chapter = format!("{}{}", royal_road, chapter_tail);
 
         thread::sleep(sleep_time);

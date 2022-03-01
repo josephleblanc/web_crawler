@@ -1,75 +1,77 @@
 // Given the starting page, extract the link to the first chapter.
 // Because the starting page is structured differently than the chapter pages,
 // this needs to be different than the function extracting each following chapter.
-pub fn html_extract_first_chapter(html_text: &str) -> &str {
-    let next_start_location = html_text
-        .find("<div class=\"col-md-4 col-lg-3 fic-buttons text-center md-text-left\">")
-        .expect("next_start_location is wrong");
-    let first_chapter_link_index = html_text[next_start_location..]
-        .find("<a href=\"")
-        .expect("first_chapter_link_index is wrong")
-        + "<a href=\"".len();
 
-    let next_html_start = next_start_location + first_chapter_link_index;
-    let next_html_end = html_text[next_html_start..]
-        .find('\"')
-        .expect("No closing \" found for next_html_end")
-        + next_html_start;
+use scraper::{Html, Selector};
 
-    let next_tail = &html_text[next_html_start..next_html_end];
-    println!("next chapter link: {}", next_tail);
-
-    next_tail
+pub fn html_extract_first_chapter(html: &Html) -> &str {
+    let button: Selector = Selector::parse(r#"div[class="col-md-4 col-lg-3 fic-buttons text-center md-text-left"]"#).unwrap();
+    let link_tail: Selector = Selector::parse(r#"a"#).unwrap();
+    html
+         .select(&button)
+         .next()
+         .unwrap()
+         .select(&link_tail)
+         .next()
+         .unwrap()
+         .value()
+         .attr("href")
+         .unwrap()
 }
+
+
 
 // Given a chapter html page, extract the link to the following chapter.
-// Because the identifying tag for the 'next chapter' link is very similar to the
-// 'previous chapter' link, this function calls itself recursively.
-// This recursion will not happen infinitely, even if there is no next link, because
-// there are only 2 cases where the identifying tag is used.
-pub fn addr_next_chapter(chapter_html: &str) -> Option<&str> {
-    let next_chapter_button_id = "<a class=\"btn btn-primary col-xs-12\" href=\"";
-    let button_id_close = "\">";
+// Will panic if there are not two of the chosen selector.
+// Meant to be run on pages with links to both previous and next chapters.
+pub fn addr_next_chapter(html: &Html) -> &str {
+    let selector = Selector::parse(r#"a[class="btn btn-primary col-xs-12"]"#).unwrap();
 
-    let next_start_i = chapter_html
-        .find(next_chapter_button_id)?
-        + next_chapter_button_id.len();
-    let next_end_i = chapter_html[next_start_i..]
-        .find(button_id_close)?
-        + next_start_i;
-
-    if chapter_html[next_end_i+button_id_close.len()..
-        next_end_i+button_id_close.len()+100].find("Next") == None {
-            return addr_next_chapter(&chapter_html[next_end_i+button_id_close.len()..]);
-    }
-
-    Some(&chapter_html[next_start_i..next_end_i])
+    html
+        .select(&selector)
+        .nth(1)
+        .unwrap()
+        .value()
+        .attr("href")
+        .unwrap()
 }
+
 
 // Given a chapter html page, extract the story text as formatted html.
-pub fn extract_body(html_text: &str) -> Option<&str> {
-    let body_id_start = "<div class=\"chapter-inner chapter-content\">";
-    let body_id_end = "</div>";
+pub fn extract_body(html: &Html) -> String {
+    let inner_chapter: Selector = Selector::parse(r#"div[class="chapter-inner chapter-content"]"#).unwrap();
 
-    let start_body = html_text.find(body_id_start)? + body_id_start.len();
-    let end_body = html_text[start_body..].find(body_id_end)? + start_body;
-    
-    Some(&html_text[start_body..end_body])
+    html
+        .select(&inner_chapter)
+        .next()
+        .unwrap()
+        .inner_html()
 }
+
 
 // Given a chapter html page, extract the chapter header as an html 
 // formatted header.
-pub fn extract_chapter_header(html_text: &str) -> Option<&str> {
-    let header_id_start = "<h1 style=\"margin-top: 10px\" class=\"font-white\">";
-    let header_id_end = "</h1>";
+pub fn extract_chapter_header(html: &Html) -> String {
+    let selector = Selector::parse(r#"h1[style="margin-top: 10px"][class="font-white"]"#).unwrap();
 
-    let start_header = html_text.find(header_id_start)?;
-    println!("start_header:{}", start_header);
-    let end_header = html_text[start_header..].find(header_id_end)? 
-        + start_header
-        + header_id_end.len();
+    html
+        .select(&selector)
+        .next()
+        .unwrap()
+        .inner_html()
+}
 
-    println!("html_header:{}", &html_text[start_header..end_header]);
-
-    Some(&html_text[start_header..end_header])
+pub fn final_button(html: &Html) -> Option<bool> {
+    let selector = Selector::parse(r#"button[class="btn btn-primary col-xs-12"][disabled="disabled"]"#).unwrap();
+//    let debug_print = html
+//        .select(&selector)
+//        .next()?
+//        .inner_html();
+//    println!("debug_print:{}", debug_print);
+    Some(html
+        .select(&selector)
+        .next()?
+        .inner_html()
+        .as_str()
+        .contains("Next"))
 }
