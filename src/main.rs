@@ -24,25 +24,42 @@ use web_crawler::{
     addr_next_chapter, 
     extract_body, 
     extract_chapter_header,
-    final_button};
+    final_button,
+    WebNovel};
 
 // Given a seed of the pattern <royal_road><path_to_coverpage>, crawl and
 // extract the story text of each chapter as formatted html to a file named 
 // 'body.html'.
 fn main() -> Result<(), Box<dyn Error>> {
-    let royal_road = "https://www.royalroad.com";
-    let seed = "https://www.royalroad.com/fiction/50553/double-blind-a-modern-litrpg";
+    let seed = "https://www.royalroad.com/fiction/21188/forge-of-destiny";
     if !seed.starts_with("https://www.royalroad.com/fiction/") {
         panic!("Did not enter a valid royalroad.com address. \
         Enter an address that starts with https://www.royalroad.com/fiction/");
     }
 
+    let double_blind = WebNovel {
+        base_page: "https://www.royalroad.com",
+        seed: "https://www.royalroad.com/fiction/21188/forge-of-destiny",
+        first_chapter_btn: Selector::parse(r#"div[class="col-md-4 col-lg-3 fic-buttons text-center md-text-left"]"#).unwrap(),
+        addr_next_chapter_btn: Selector::parse(r#"a[class="btn btn-primary col-xs-12"]"#).unwrap(),
+        body_extractor: Selector::parse(r#"div[class="chapter-inner chapter-content"]"#).unwrap(),
+        chapter_title: Selector::parse(r#"h1[style="margin-top: 10px"][class="font-white"]"#).unwrap(),
+        final_button: Selector::parse(r#"button[class="btn btn-primary col-xs-12"][disabled="disabled"]"#).unwrap(),
+    };
+
+    crawl(double_blind)?;
+
+    Ok(())
+}
+
+fn crawl(webnovel: WebNovel) -> Result<(), Box<dyn Error>> {
+
     // Reqwest first cover page and extract link to first chapter
-    let first_chapter_html: Html = Html::parse_fragment(&reqwest::blocking::get(seed)?.text()?);
-    let mut chapter_tail: &str = html_extract_first_chapter(&first_chapter_html)
+    let first_chapter_html: Html = Html::parse_fragment(&reqwest::blocking::get(webnovel.seed)?.text()?);
+    let mut chapter_tail: &str = html_extract_first_chapter(&first_chapter_html, &webnovel.first_chapter_btn)
         .unwrap();
 
-    let mut addr_chapter = format!("{}{}", royal_road, chapter_tail);
+    let mut addr_chapter = format!("{}{}", webnovel.base_page, chapter_tail);
     let mut html_chapter: Html = Html::parse_fragment(&reqwest::blocking::get(&addr_chapter)?.text()?);
 
     // Create output file
@@ -55,39 +72,39 @@ fn main() -> Result<(), Box<dyn Error>> {
         .unwrap();
 
     // Write Chapter 1 to file body.html
-    let mut current_body: String = extract_body(&html_chapter)
+    let mut current_body: String = extract_body(&html_chapter, &webnovel.body_extractor)
         .unwrap();
-    file.write_all(extract_chapter_header(&html_chapter)
+    file.write_all(extract_chapter_header(&html_chapter, &webnovel.chapter_title)
                    .unwrap()
                    .as_bytes())?;
     file.write_all(current_body.as_bytes())?;
     chapter_tail = html_chapter
-        .select(&Selector::parse(r#"a[class="btn btn-primary col-xs-12"]"#).unwrap())
+        .select(&webnovel.addr_next_chapter_btn)
         .next()
         .unwrap()
         .value()
         .attr("href")
         .unwrap();
-    addr_chapter = format!("{}{}", royal_road, chapter_tail);
+    addr_chapter = format!("{}{}", webnovel.base_page, chapter_tail);
 
     // Rate limiting, chosen arbitrarily
     let sleep_time = time::Duration::from_millis(200);
 
     // Loop through chapters, extract next link, download contents, save
     println!("before");
-    while final_button(&html_chapter) != Some(true) {
+    while final_button(&html_chapter, &webnovel.final_button) != Some(true) {
         println!("Getting next page: {}", &addr_chapter);
         html_chapter = Html::parse_fragment(&reqwest::blocking::get(addr_chapter)?.text()?);
-        current_body = extract_body(&html_chapter)
+        current_body = extract_body(&html_chapter, &webnovel.body_extractor)
             .unwrap();
-        file.write_all(extract_chapter_header(&html_chapter)
+        file.write_all(extract_chapter_header(&html_chapter, &webnovel.chapter_title)
                        .unwrap()
                        .as_bytes())?;
         file.write_all(current_body.as_bytes())?;
 
-        chapter_tail = addr_next_chapter(&html_chapter)
+        chapter_tail = addr_next_chapter(&html_chapter, &webnovel.addr_next_chapter_btn)
             .unwrap();
-        addr_chapter = format!("{}{}", royal_road, chapter_tail);
+        addr_chapter = format!("{}{}", webnovel.base_page, chapter_tail);
 
         thread::sleep(sleep_time);
     }
