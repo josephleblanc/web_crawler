@@ -48,7 +48,7 @@ pub fn extract_body(html: &Html, selector: &Selector) -> Option<String> {
     Some(html
         .select(selector)
         .next()?
-        .inner_html())
+        .html())
 }
 
 
@@ -60,7 +60,7 @@ pub fn extract_chapter_header(html: &Html, selector: &Selector) -> Option<String
     Some(html
         .select(selector)
         .next()?
-        .inner_html())
+        .html())
 }
 
 pub fn final_button(html: &Html, selector: &Selector) -> Option<bool> {
