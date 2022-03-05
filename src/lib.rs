@@ -14,6 +14,21 @@ pub struct WebNovel <'a> {
     pub final_button: Selector
 }
 
+impl WebNovel<'_> {
+    pub fn new_from_config<'b>(seed: &'b str, config_list: Vec<&'b str>) -> Option<WebNovel<'b>> {
+        Some(WebNovel {
+            seed: seed,
+            base_page: config_list[1],
+            first_chapter_btn: Selector::parse(config_list[2]).unwrap(),
+            addr_next_chapter_btn: Selector::parse(config_list[3]).unwrap(),
+            body_extractor: Selector::parse(config_list[4]).unwrap(),
+            chapter_title: Selector::parse(config_list[5]).unwrap(),
+            final_button: Selector::parse(config_list[6]).unwrap()
+        })
+    }
+}
+
+
 pub fn html_extract_first_chapter<'a>(html: &'a Html, button: &'a Selector) -> Option<&'a str> {
 //    let button: Selector = Selector::parse(r#"div[class="col-md-4 col-lg-3 fic-buttons text-center md-text-left"]"#).unwrap();
     let link_tail: Selector = Selector::parse(r#"a"#).unwrap();
