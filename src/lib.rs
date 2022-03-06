@@ -17,7 +17,7 @@ pub struct WebNovel <'a> {
 impl WebNovel<'_> {
     pub fn new_from_config<'b>(seed: &'b str, config_list: Vec<&'b str>) -> Option<WebNovel<'b>> {
         Some(WebNovel {
-            seed: seed,
+            seed,
             base_page: config_list[1],
             first_chapter_btn: Selector::parse(config_list[2]).unwrap(),
             addr_next_chapter_btn: Selector::parse(config_list[3]).unwrap(),

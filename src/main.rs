@@ -17,7 +17,7 @@ use std::error::Error;
 use std::fs;
 use std::io::Write;
 use std::{thread, time};
-use scraper::{Html, Selector};
+use scraper::Html;
 
 use web_crawler::{
     html_extract_first_chapter, 
@@ -37,15 +37,12 @@ fn main() -> Result<(), Box<dyn Error>> {
         Enter an address that starts with https://www.royalroad.com/fiction/");
     }
 
-    let double_blind = WebNovel {
-        base_page: "https://www.royalroad.com",
-        seed: "https://www.royalroad.com/fiction/21188/forge-of-destiny",
-        first_chapter_btn: Selector::parse(r#"div[class="col-md-4 col-lg-3 fic-buttons text-center md-text-left"]"#).unwrap(),
-        addr_next_chapter_btn: Selector::parse(r#"a[class="btn btn-primary col-xs-12"]"#).unwrap(),
-        body_extractor: Selector::parse(r#"div[class="chapter-inner chapter-content"]"#).unwrap(),
-        chapter_title: Selector::parse(r#"h1[style="margin-top: 10px"][class="font-white"]"#).unwrap(),
-        final_button: Selector::parse(r#"button[class="btn btn-primary col-xs-12"][disabled="disabled"]"#).unwrap(),
-    };
+    let config = fs::read_to_string("../config/page_templates.txt").unwrap();
+    let template: Vec<&str> = config
+        .split(',')
+        .collect();
+
+    let double_blind = WebNovel::new_from_config(seed, template).unwrap();
 
     crawl(double_blind)?;
 
