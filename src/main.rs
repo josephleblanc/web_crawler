@@ -1,10 +1,7 @@
 // To Do:
 // -Actually do proper error handling (once I know better what that means).
 // -Write some clever tests (once I know how to do that).
-// -Currently panics upon finishing successfully, design better
 // -Prompt user to enter address of seed page
-// -Refactor to allow multiple seed pages, possibly allowing user to queue up
-// several seed pages or possibly read seed pages from file.
 
 // Stretch Goals/Ideas:
 // -Use concurrency
@@ -24,32 +21,42 @@ use web_crawler::{
     addr_next_chapter, 
     extract_body, 
     extract_chapter_header,
-    final_button,
+    nav_buttons,
     WebNovel};
 
 // Given a seed of the pattern <royal_road><path_to_coverpage>, crawl and
-// extract the story text of each chapter as formatted html to a file named 
-// 'body.html'.
+// extract the story text of each chapter as formatted html to a file.
 fn main() -> Result<(), Box<dyn Error>> {
-    let seed = "https://www.royalroad.com/fiction/21188/forge-of-destiny";
-    if !seed.starts_with("https://www.royalroad.com/fiction/") {
-        panic!("Did not enter a valid royalroad.com address. \
-        Enter an address that starts with https://www.royalroad.com/fiction/");
-    }
+    let seed_file = fs::read_to_string("../config/seeds.txt").unwrap();
+    let seed_list: Vec<Vec<&str>> = seed_file
+        .split(",\n")
+        .filter(|line| !line.is_empty())
+        .map(|line| line.split(',').collect::<Vec<&str>>())
+        .collect();
 
     let config = fs::read_to_string("../config/page_templates.txt").unwrap();
     let template: Vec<&str> = config
         .split(',')
         .collect();
-
-    let double_blind = WebNovel::new_from_config(seed, template).unwrap();
-
-    crawl(double_blind)?;
+    
+    for seed in &seed_list {
+        println!("title and seed:{:?}", &seed);
+        let web_novel = WebNovel::new_from_config(seed[1], &template, seed[0]).unwrap();
+        let mut output_file = String::from(web_novel.output_folder);
+        output_file.push_str(web_novel.title);
+        output_file.push_str(web_novel.file_extension);
+        println!("output_file:{}", output_file);
+    
+        println!("crawling: {}", &seed[1]);
+        crawl(web_novel, &output_file[..])?;
+        
+    }
 
     Ok(())
 }
 
-fn crawl(webnovel: WebNovel) -> Result<(), Box<dyn Error>> {
+fn crawl(webnovel: WebNovel, output_file: &str) -> Result<(), Box<dyn Error>> {
+    let debug = true;
 
     // Reqwest first cover page and extract link to first chapter
     let first_chapter_html: Html = Html::parse_fragment(&reqwest::blocking::get(webnovel.seed)?.text()?);
@@ -61,20 +68,26 @@ fn crawl(webnovel: WebNovel) -> Result<(), Box<dyn Error>> {
 
     // Create output file
     // fs::File::create() will truncate file if the file already exists
-    fs::File::create("body.html")?;
+    fs::File::create(output_file)?;
     let mut file = fs::OpenOptions::new()
         .write(true)
         .append(true)
-        .open("body.html")
+        .open(output_file)
         .unwrap();
 
-    // Write Chapter 1 to file body.html
+    // Write Chapter 1 to output_file
     let mut current_body: String = extract_body(&html_chapter, &webnovel.body_extractor)
         .unwrap();
     file.write_all(extract_chapter_header(&html_chapter, &webnovel.chapter_title)
                    .unwrap()
                    .as_bytes())?;
     file.write_all(current_body.as_bytes())?;
+
+    // Early exit if only one page to crawl with no next link
+//    println!("nav_buttons:{:?}", nav_buttons(&html_chapter, &webnovel.nav_buttons, &webnovel.nav_validator));
+    if nav_buttons(&html_chapter, &webnovel.nav_buttons, &webnovel.nav_validator, &webnovel.nav_name) == Some("disabled") { return Ok(()) }
+    if debug == true { println!("nav_buttons returns:{:?}", nav_buttons(&html_chapter, &webnovel.nav_buttons, &webnovel.nav_validator, &webnovel.nav_name)); }
+    if debug == true { println!("webnovel: {:?}", webnovel); }
     chapter_tail = html_chapter
         .select(&webnovel.addr_next_chapter_btn)
         .next()
@@ -83,13 +96,16 @@ fn crawl(webnovel: WebNovel) -> Result<(), Box<dyn Error>> {
         .attr("href")
         .unwrap();
     addr_chapter = format!("{}{}", webnovel.base_page, chapter_tail);
+    if debug == true { println!("addr_chapter:{}", addr_chapter); }
 
     // Rate limiting, chosen arbitrarily
     let sleep_time = time::Duration::from_millis(200);
 
     // Loop through chapters, extract next link, download contents, save
     println!("before");
-    while final_button(&html_chapter, &webnovel.final_button) != Some(true) {
+    while nav_buttons(&html_chapter, &webnovel.nav_buttons, &webnovel.nav_validator, &webnovel.nav_name).is_none() {
+        if debug == true { println!("nav_buttons returns:{:?}", nav_buttons(&html_chapter, &webnovel.nav_buttons, &webnovel.nav_validator, &webnovel.nav_name)); }
+
         println!("Getting next page: {}", &addr_chapter);
         html_chapter = Html::parse_fragment(&reqwest::blocking::get(addr_chapter)?.text()?);
         current_body = extract_body(&html_chapter, &webnovel.body_extractor)
@@ -99,6 +115,9 @@ fn crawl(webnovel: WebNovel) -> Result<(), Box<dyn Error>> {
                        .as_bytes())?;
         file.write_all(current_body.as_bytes())?;
 
+        if !nav_buttons(&html_chapter, &webnovel.nav_buttons, &webnovel.nav_validator, &webnovel.nav_name).is_none() {
+            return Ok(());
+        }
         chapter_tail = addr_next_chapter(&html_chapter, &webnovel.addr_next_chapter_btn)
             .unwrap();
         addr_chapter = format!("{}{}", webnovel.base_page, chapter_tail);

@@ -4,6 +4,7 @@
 
 use scraper::{Html, Selector};
 
+#[derive(Debug)]
 pub struct WebNovel <'a> {
     pub base_page: &'a str,
     pub seed: &'a str,
@@ -11,11 +12,16 @@ pub struct WebNovel <'a> {
     pub addr_next_chapter_btn: Selector,
     pub body_extractor: Selector,
     pub chapter_title: Selector,
-    pub final_button: Selector
+    pub nav_buttons: Selector,
+    pub nav_validator: &'a str,
+    pub nav_name: &'a str,
+    pub output_folder: &'a str,
+    pub title: &'a str,
+    pub file_extension: &'a str,
 }
 
 impl WebNovel<'_> {
-    pub fn new_from_config<'b>(seed: &'b str, config_list: Vec<&'b str>) -> Option<WebNovel<'b>> {
+    pub fn new_from_config<'b>(seed: &'b str, config_list: &Vec<&'b str>, title: &'b str) -> Option<WebNovel<'b>> {
         Some(WebNovel {
             seed,
             base_page: config_list[1],
@@ -23,7 +29,12 @@ impl WebNovel<'_> {
             addr_next_chapter_btn: Selector::parse(config_list[3]).unwrap(),
             body_extractor: Selector::parse(config_list[4]).unwrap(),
             chapter_title: Selector::parse(config_list[5]).unwrap(),
-            final_button: Selector::parse(config_list[6]).unwrap()
+            nav_buttons: Selector::parse(config_list[6]).unwrap(),
+            nav_validator: config_list[7],
+            nav_name: config_list[8],
+            output_folder: config_list[9],
+            title,
+            file_extension: config_list[10],
         })
     }
 }
@@ -44,7 +55,7 @@ pub fn html_extract_first_chapter<'a>(html: &'a Html, button: &'a Selector) -> O
 
 
 // Given a chapter html page, extract the link to the following chapter.
-// Will panic if there are not two of the chosen selector.
+// Will return None if there are not two of the chosen selector.
 // Meant to be run on pages with links to both previous and next chapters.
 pub fn addr_next_chapter<'a>(html: &'a Html, selector: &'a Selector) -> Option<&'a str> {
 //    let selector = Selector::parse(r#"a[class="btn btn-primary col-xs-12"]"#).unwrap();
@@ -78,12 +89,18 @@ pub fn extract_chapter_header(html: &Html, selector: &Selector) -> Option<String
         .html())
 }
 
-pub fn final_button(html: &Html, selector: &Selector) -> Option<bool> {
-//    let selector = Selector::parse(r#"button[class="btn btn-primary col-xs-12"][disabled="disabled"]"#).unwrap();
-    Some(html
-        .select(selector)
-        .next()?
-        .inner_html()
-        .as_str()
-        .contains("Next"))
+pub fn nav_buttons<'c>(html: &'c Html, selector: &'c Selector, nav_validator: &'c str, nav_name: &'c str) -> Option<&'c str> {
+
+//    println!("nav_validator:{}", &nav_validator);
+//    let debug = html
+//        .select(&selector)
+//        .enumerate();
+//    for (i, element) in debug {
+//        println!("nav_button_debug {}:{}", i, element.html().as_str());
+//    }
+    html.select(&selector)
+        .filter_map(|element| element.inner_html().contains(nav_name).then(|| element.value().attr(nav_validator)))
+        .next()
+        .unwrap()
+
 }
