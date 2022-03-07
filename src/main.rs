@@ -85,9 +85,9 @@ fn crawl(webnovel: WebNovel, output_file: &str) -> Result<(), Box<dyn Error>> {
 
     // Early exit if only one page to crawl with no next link
 //    println!("nav_buttons:{:?}", nav_buttons(&html_chapter, &webnovel.nav_buttons, &webnovel.nav_validator));
-    if nav_buttons(&html_chapter, &webnovel.nav_buttons, &webnovel.nav_validator, &webnovel.nav_name) == Some("disabled") { return Ok(()) }
-    if debug == true { println!("nav_buttons returns:{:?}", nav_buttons(&html_chapter, &webnovel.nav_buttons, &webnovel.nav_validator, &webnovel.nav_name)); }
-    if debug == true { println!("webnovel: {:?}", webnovel); }
+    if nav_buttons(&html_chapter, &webnovel.nav_buttons, webnovel.nav_validator, webnovel.nav_name) == Some("disabled") { return Ok(()) }
+    if debug { println!("nav_buttons returns:{:?}", nav_buttons(&html_chapter, &webnovel.nav_buttons, webnovel.nav_validator, webnovel.nav_name)); }
+    if debug { println!("webnovel: {:?}", webnovel); }
     chapter_tail = html_chapter
         .select(&webnovel.addr_next_chapter_btn)
         .next()
@@ -96,15 +96,15 @@ fn crawl(webnovel: WebNovel, output_file: &str) -> Result<(), Box<dyn Error>> {
         .attr("href")
         .unwrap();
     addr_chapter = format!("{}{}", webnovel.base_page, chapter_tail);
-    if debug == true { println!("addr_chapter:{}", addr_chapter); }
+    if debug { println!("addr_chapter:{}", addr_chapter); }
 
     // Rate limiting, chosen arbitrarily
     let sleep_time = time::Duration::from_millis(200);
 
     // Loop through chapters, extract next link, download contents, save
     println!("before");
-    while nav_buttons(&html_chapter, &webnovel.nav_buttons, &webnovel.nav_validator, &webnovel.nav_name).is_none() {
-        if debug == true { println!("nav_buttons returns:{:?}", nav_buttons(&html_chapter, &webnovel.nav_buttons, &webnovel.nav_validator, &webnovel.nav_name)); }
+    while nav_buttons(&html_chapter, &webnovel.nav_buttons, webnovel.nav_validator, webnovel.nav_name).is_none() {
+        if debug { println!("nav_buttons returns:{:?}", nav_buttons(&html_chapter, &webnovel.nav_buttons, webnovel.nav_validator, webnovel.nav_name)); }
 
         println!("Getting next page: {}", &addr_chapter);
         html_chapter = Html::parse_fragment(&reqwest::blocking::get(addr_chapter)?.text()?);
@@ -115,7 +115,7 @@ fn crawl(webnovel: WebNovel, output_file: &str) -> Result<(), Box<dyn Error>> {
                        .as_bytes())?;
         file.write_all(current_body.as_bytes())?;
 
-        if !nav_buttons(&html_chapter, &webnovel.nav_buttons, &webnovel.nav_validator, &webnovel.nav_name).is_none() {
+        if nav_buttons(&html_chapter, &webnovel.nav_buttons, webnovel.nav_validator, webnovel.nav_name).is_some() {
             return Ok(());
         }
         chapter_tail = addr_next_chapter(&html_chapter, &webnovel.addr_next_chapter_btn)

@@ -21,7 +21,7 @@ pub struct WebNovel <'a> {
 }
 
 impl WebNovel<'_> {
-    pub fn new_from_config<'b>(seed: &'b str, config_list: &Vec<&'b str>, title: &'b str) -> Option<WebNovel<'b>> {
+    pub fn new_from_config<'b>(seed: &'b str, config_list: &[&'b str], title: &'b str) -> Option<WebNovel<'b>> {
         Some(WebNovel {
             seed,
             base_page: config_list[1],
@@ -98,7 +98,7 @@ pub fn nav_buttons<'c>(html: &'c Html, selector: &'c Selector, nav_validator: &'
 //    for (i, element) in debug {
 //        println!("nav_button_debug {}:{}", i, element.html().as_str());
 //    }
-    html.select(&selector)
+    html.select(selector)
         .filter_map(|element| element.inner_html().contains(nav_name).then(|| element.value().attr(nav_validator)))
         .next()
         .unwrap()
