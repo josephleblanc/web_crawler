@@ -23,10 +23,10 @@ use web_crawler::{
     extract_target, 
     WebNovel};
 
-// Given a seed of the pattern <royal_road><path_to_coverpage>, crawl and
+// Given a seed of the pattern <royal road><path to first shcapter>, crawl and
 // extract the story text of each chapter as formatted html to a file.
 fn main() -> Result<(), Box<dyn Error>> {
-    let debug = true;
+    let debug = false;
 
     let seed_file = fs::read_to_string("../config/seeds.txt").unwrap();
     let seed_list: Vec<Vec<&str>> = seed_file
@@ -37,15 +37,16 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let config = fs::read_to_string("../config/page_templates.txt").unwrap();
     let template: Vec<&str> = config
-        .split(',')
+        .split("\n")
+        .filter(|line| !line.is_empty())
         .collect();
     
     for seed in &seed_list {
-        if debug { println!("title and seed:{:?}", &seed); }
+        if debug { println!("file_name and seed:{:?}", &seed); }
         let web_novel = WebNovel::new_from_config(seed[1], &template, seed[0]).unwrap();
 
         let mut output_file = String::from(web_novel.output_folder);
-        output_file.push_str(web_novel.title);
+        output_file.push_str(web_novel.file_name);
         output_file.push_str(web_novel.file_extension);
         if debug { println!("output_file:{}", output_file); }
     
@@ -59,7 +60,6 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 fn crawl(webnovel: WebNovel, output_file: &str) -> Result<(), Box<dyn Error>> {
     let debug = false;
-
 
     // Create output file
     // fs::File::create() will truncate file if the file already exists
@@ -83,7 +83,7 @@ fn crawl(webnovel: WebNovel, output_file: &str) -> Result<(), Box<dyn Error>> {
     file.write_all(body.as_bytes())?;
     let mut chapter_tail: Option<&str> = addr_next_chapter(&html, &webnovel.addr_next_chapter_btn);
 
-    println!("chapter_tail:{:?}", chapter_tail);
+    if debug { println!("chapter_tail:{:?}", chapter_tail); }
 
     while chapter_tail.is_some() {
         let addr_chapter = format!("{}{}", webnovel.base_page, chapter_tail.unwrap());

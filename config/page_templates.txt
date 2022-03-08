@@ -1,1 +1,7 @@
-royal_road,https://www.royalroad.com,div[class="col-md-4 col-lg-3 fic-buttons text-center md-text-left"],[class="btn btn-primary col-xs-12"],div[class="chapter-inner chapter-content,h1[style="margin-top: 10px"][class="font-white"],[class="btn btn-primary col-xs-12"],disabled,Next,../web_novels/,.html,
+royal_road
+https://www.royalroad.com
+[class="btn btn-primary col-xs-12"]
+div[class="chapter-inner chapter-content
+h1[style="margin-top: 10px"][class="font-white"]
+../web_novels/
+.html

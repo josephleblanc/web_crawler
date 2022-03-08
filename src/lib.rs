@@ -8,33 +8,25 @@ use scraper::{Html, Selector};
 pub struct WebNovel <'a> {
     pub base_page: &'a str,
     pub seed: &'a str,
-    pub first_chapter_btn: Selector,
     pub addr_next_chapter_btn: Selector,
     pub body_extractor: Selector,
     pub page_title: Selector,
-    pub nav_buttons: Selector,
-    pub nav_validator: &'a str,
-    pub nav_name: &'a str,
     pub output_folder: &'a str,
-    pub title: &'a str,
+    pub file_name: &'a str,
     pub file_extension: &'a str,
 }
 
 impl WebNovel<'_> {
-    pub fn new_from_config<'b>(seed: &'b str, config_list: &[&'b str], title: &'b str) -> Option<WebNovel<'b>> {
+    pub fn new_from_config<'b>(seed: &'b str, config_list: &[&'b str], file_name: &'b str) -> Option<WebNovel<'b>> {
         Some(WebNovel {
             seed,
             base_page: config_list[1],
-            first_chapter_btn: Selector::parse(config_list[2]).unwrap(),
-            addr_next_chapter_btn: Selector::parse(config_list[3]).unwrap(),
-            body_extractor: Selector::parse(config_list[4]).unwrap(),
-            page_title: Selector::parse(config_list[5]).unwrap(),
-            nav_buttons: Selector::parse(config_list[6]).unwrap(),
-            nav_validator: config_list[7],
-            nav_name: config_list[8],
-            output_folder: config_list[9],
-            title,
-            file_extension: config_list[10],
+            addr_next_chapter_btn: Selector::parse(config_list[2]).unwrap(),
+            body_extractor: Selector::parse(config_list[3]).unwrap(),
+            page_title: Selector::parse(config_list[4]).unwrap(),
+            output_folder: config_list[5],
+            file_name,
+            file_extension: config_list[6],
         })
     }
 }
