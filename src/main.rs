@@ -1,6 +1,5 @@
 // To Do:
-// -Significantly rework config files to reflect new logic after last refactor
-// -Rework config files to be more intuitive by changing splitter from ',' to '\n'
+// -Make it possible to update chapters instead of redownloading each time.
 // -Actually do proper error handling (once I know better what that means).
 // -Write some clever tests (once I know how to do that).
 // -Prompt user to enter address of seed page
@@ -23,8 +22,10 @@ use web_crawler::{
     extract_target, 
     WebNovel};
 
-// Given a seed of the pattern <royal road><path to first shcapter>, crawl and
-// extract the story text of each chapter as formatted html to a file.
+// Given seeds of the pattern <royal road><path to first chapter> from config
+// file ../config/seeds.txt and page templates from ../config/page_templates.txt, 
+// crawl and extract the page title and story text of each chapter as 
+// formatted html to a file in ../webnovels/
 fn main() -> Result<(), Box<dyn Error>> {
     let debug = false;
 
@@ -73,7 +74,7 @@ fn crawl(webnovel: WebNovel, output_file: &str) -> Result<(), Box<dyn Error>> {
     // Rate limiting, chosen arbitrarily
     let sleep_time = time::Duration::from_millis(200);
 
-    // Scrape and save first chapter
+    // Scrape and save first chapter, and grab next link
     let mut html: Html = Html::parse_fragment(&reqwest::blocking::get(webnovel.seed)?.text()?);
     let mut body: String = extract_target(&html, &webnovel.body_extractor)
         .unwrap();
@@ -85,6 +86,8 @@ fn crawl(webnovel: WebNovel, output_file: &str) -> Result<(), Box<dyn Error>> {
 
     if debug { println!("chapter_tail:{:?}", chapter_tail); }
 
+    // Main work of program
+    // Loop through: format next link, reqwest next page, save, get next link
     while chapter_tail.is_some() {
         let addr_chapter = format!("{}{}", webnovel.base_page, chapter_tail.unwrap());
         println!("Getting next page: {}", &addr_chapter);
