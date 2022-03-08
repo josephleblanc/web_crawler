@@ -38,7 +38,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let config = fs::read_to_string("../config/page_templates.txt").unwrap();
     let template: Vec<&str> = config
-        .split("\n")
+        .split('\n')
         .filter(|line| !line.is_empty())
         .collect();
     
