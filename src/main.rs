@@ -27,7 +27,7 @@ use web_crawler::{
 // crawl and extract the page title and story text of each chapter as 
 // formatted html to a file in ../webnovels/
 fn main() -> Result<(), Box<dyn Error>> {
-    let debug = false;
+    let debug = true;
 
     let seed_file = fs::read_to_string("../config/seeds.txt").unwrap();
     let seed_list: Vec<Vec<&str>> = seed_file
@@ -42,6 +42,12 @@ fn main() -> Result<(), Box<dyn Error>> {
         .filter(|line| !line.is_empty())
         .collect();
     
+    match fs::create_dir("../web_novels") {
+        Err(ref e) if e.kind() == std::io::ErrorKind::AlreadyExists => (),
+        Err(e) => panic!("Can't create directory, error: {}", e),
+        Ok(_) => (),
+    };
+        
     for seed in &seed_list {
         if debug { println!("file_name and seed:{:?}", &seed); }
         let web_novel = WebNovel::new_from_config(seed[1], &template, seed[0]).unwrap();
@@ -52,8 +58,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         if debug { println!("output_file:{}", output_file); }
     
         if debug { println!("crawling: {}", &seed[1]); }
-        crawl(web_novel, &output_file[..])?;
-        
+        crawl(web_novel, &output_file[..]).unwrap();
     }
 
     Ok(())
@@ -80,8 +85,8 @@ fn crawl(webnovel: WebNovel, output_file: &str) -> Result<(), Box<dyn Error>> {
         .unwrap();
     let mut page_head = extract_target(&html, &webnovel.page_title)
         .unwrap();
-    file.write_all(page_head.as_bytes())?;
-    file.write_all(body.as_bytes())?;
+    file.write_all(page_head.as_bytes()).unwrap();
+    file.write_all(body.as_bytes()).unwrap();
     let mut chapter_tail: Option<&str> = addr_next_chapter(&html, &webnovel.addr_next_chapter_btn);
 
     if debug { println!("chapter_tail:{:?}", chapter_tail); }
@@ -97,8 +102,8 @@ fn crawl(webnovel: WebNovel, output_file: &str) -> Result<(), Box<dyn Error>> {
         page_head = extract_target(&html, &webnovel.page_title)
             .unwrap();
 
-        file.write_all(page_head.as_bytes())?;
-        file.write_all(body.as_bytes())?;
+        file.write_all(page_head.as_bytes()).unwrap();
+        file.write_all(body.as_bytes()).unwrap();
 
         chapter_tail = addr_next_chapter(&html, &webnovel.addr_next_chapter_btn);
 
