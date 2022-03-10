@@ -37,10 +37,23 @@ fn main() -> Result<(), Box<dyn Error>> {
         .collect();
 
     let config = fs::read_to_string("../config/page_templates.txt").unwrap();
-    let template: Vec<&str> = config
-        .split('\n')
-        .filter(|line| !line.is_empty())
+    let template_list: Vec<Vec<&str>> = config
+        .split("\n\n")
+        .filter(|template| !template.is_empty())
+        .map(|template| template
+             .split('\n')
+             .filter(|line| !line.is_empty())
+             .collect())
         .collect();
+
+    let mut full_profile: Vec<(&Vec<&str>, &Vec<&str>)> = vec![];
+    for seed_profile in &seed_list {
+        for template in &template_list {
+            if template[0] == seed_profile[0] {
+                full_profile.push((seed_profile, template));
+            }
+        }
+    }
     
     match fs::create_dir("../web_novels") {
         Err(ref e) if e.kind() == std::io::ErrorKind::AlreadyExists => (),
@@ -48,16 +61,16 @@ fn main() -> Result<(), Box<dyn Error>> {
         Ok(_) => (),
     };
         
-    for seed in &seed_list {
-        if debug { println!("file_name and seed:{:?}", &seed); }
-        let web_novel = WebNovel::new_from_config(seed[1], &template, seed[0]).unwrap();
+    for (seed_profile, template) in &full_profile {
+        if debug { println!("file_name and seed:{:?}", &seed_profile); }
+        let web_novel = WebNovel::new_from_config(&seed_profile, &template).unwrap();
 
         let mut output_file = String::from(web_novel.output_folder);
         output_file.push_str(web_novel.file_name);
         output_file.push_str(web_novel.file_extension);
         if debug { println!("output_file:{}", output_file); }
     
-        if debug { println!("crawling: {}", &seed[1]); }
+        if debug { println!("crawling: {}", &seed_profile[1]); }
         crawl(web_novel, &output_file[..]).unwrap();
     }
 
@@ -83,9 +96,6 @@ fn crawl(webnovel: WebNovel, output_file: &str) -> Result<(), Box<dyn Error>> {
     let mut html: Html = Html::parse_fragment(&reqwest::blocking::get(webnovel.seed)?.text()?);
     let mut body: String = extract_target(&html, &webnovel.body_extractor)
         .unwrap();
-    let mut page_head = extract_target(&html, &webnovel.page_title)
-        .unwrap();
-    file.write_all(page_head.as_bytes()).unwrap();
     file.write_all(body.as_bytes()).unwrap();
     let mut chapter_tail: Option<&str> = addr_next_chapter(&html, &webnovel.addr_next_chapter_btn);
 
@@ -94,19 +104,20 @@ fn crawl(webnovel: WebNovel, output_file: &str) -> Result<(), Box<dyn Error>> {
     // Main work of program
     // Loop through: format next link, reqwest next page, save, get next link
     while chapter_tail.is_some() {
-        let addr_chapter = format!("{}{}", webnovel.base_page, chapter_tail.unwrap());
+        let mut addr_chapter = String::new();
+        if chapter_tail.unwrap().chars().next().unwrap() == '/' {
+            addr_chapter = format!("{}{}", webnovel.base_page, chapter_tail.unwrap());
+        } else {
+            addr_chapter = String::from(chapter_tail.unwrap());
+        }
         println!("Getting next page: {}", &addr_chapter);
         html = Html::parse_fragment(&reqwest::blocking::get(addr_chapter)?.text()?);
         body = extract_target(&html, &webnovel.body_extractor)
             .unwrap();
-        page_head = extract_target(&html, &webnovel.page_title)
-            .unwrap();
-
-        file.write_all(page_head.as_bytes()).unwrap();
         file.write_all(body.as_bytes()).unwrap();
 
         chapter_tail = addr_next_chapter(&html, &webnovel.addr_next_chapter_btn);
-
+        if debug { println!("chapter_tail:{:?}", chapter_tail); }
         thread::sleep(sleep_time);
     }
     

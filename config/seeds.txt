@@ -1,2 +1,3 @@
-ovel_earth,https://www.royalroad.com/fiction/52079/oval-earth/chapter/859426/chapter-01-oval-the-city-in-the-forest,
-mother_of_learning,https://www.royalroad.com/fiction/21220/mother-of-learning/chapter/301778/1-good-morning-brother,
+wuxia_world,the_grandmaster_strategist,https://wuxiaworld.name/360/the-grandmaster-strategist/book-1-chapter-1,
+royal_road,ovel_earth,https://www.royalroad.com/fiction/52079/oval-earth/chapter/859426/chapter-01-oval-the-city-in-the-forest,
+royal_road,mother_of_learning,https://www.royalroad.com/fiction/21220/mother-of-learning/chapter/301778/1-good-morning-brother,

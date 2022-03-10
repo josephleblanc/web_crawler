@@ -10,23 +10,21 @@ pub struct WebNovel <'a> {
     pub seed: &'a str,
     pub addr_next_chapter_btn: Selector,
     pub body_extractor: Selector,
-    pub page_title: Selector,
     pub output_folder: &'a str,
     pub file_name: &'a str,
     pub file_extension: &'a str,
 }
 
 impl WebNovel<'_> {
-    pub fn new_from_config<'b>(seed: &'b str, config_list: &[&'b str], file_name: &'b str) -> Option<WebNovel<'b>> {
+    pub fn new_from_config<'b>(seed_profile: &[&'b str], config_list: &[&'b str]) -> Option<WebNovel<'b>> {
         Some(WebNovel {
-            seed,
+            seed: seed_profile[2],
             base_page: config_list[1],
             addr_next_chapter_btn: Selector::parse(config_list[2]).unwrap(),
             body_extractor: Selector::parse(config_list[3]).unwrap(),
-            page_title: Selector::parse(config_list[4]).unwrap(),
-            output_folder: config_list[5],
-            file_name,
-            file_extension: config_list[6],
+            output_folder: config_list[4],
+            file_name: seed_profile[1],
+            file_extension: config_list[5],
         })
     }
 }
