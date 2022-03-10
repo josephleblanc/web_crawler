@@ -63,7 +63,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         
     for (seed_profile, template) in &full_profile {
         if debug { println!("file_name and seed:{:?}", &seed_profile); }
-        let web_novel = WebNovel::new_from_config(&seed_profile, &template).unwrap();
+        let web_novel = WebNovel::new_from_config(seed_profile, template).unwrap();
 
         let mut output_file = String::from(web_novel.output_folder);
         output_file.push_str(web_novel.file_name);
@@ -104,8 +104,8 @@ fn crawl(webnovel: WebNovel, output_file: &str) -> Result<(), Box<dyn Error>> {
     // Main work of program
     // Loop through: format next link, reqwest next page, save, get next link
     while chapter_tail.is_some() {
-        let mut addr_chapter = String::new();
-        if chapter_tail.unwrap().chars().next().unwrap() == '/' {
+        let addr_chapter;
+        if chapter_tail.unwrap().starts_with('/') {
             addr_chapter = format!("{}{}", webnovel.base_page, chapter_tail.unwrap());
         } else {
             addr_chapter = String::from(chapter_tail.unwrap());
