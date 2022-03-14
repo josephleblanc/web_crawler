@@ -4,6 +4,7 @@ https://www.royalroad.com
 div[class="chapter-inner chapter-content"]
 ../web_novels/
 .html
+Next
 
 wuxia_world
 https://wuxiaworld.name
@@ -11,3 +12,12 @@ a[title="Next chapter"]
 div[class="content-area"]
 ../web_novels/
 .html
+PLACEHOLDER
+
+bestlightnovel
+https://bestlightnovel.com
+a[class="btn_theodoi btn_doc"]
+[id="vung_doc"]
+../web_novels/
+.html
+NEXT CHAPTER

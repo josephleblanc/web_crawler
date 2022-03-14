@@ -13,6 +13,11 @@ pub struct WebNovel <'a> {
     pub output_folder: &'a str,
     pub file_name: &'a str,
     pub file_extension: &'a str,
+    pub last_scraped: Option<String>,
+    // indicator used to ensure next link is correct. inner_html of next link
+    // will be searched for this pattern as confirmation that the link is
+    // correct.
+    pub indicator: &'a str,
 }
 
 impl WebNovel<'_> {
@@ -25,6 +30,11 @@ impl WebNovel<'_> {
             output_folder: config_list[4],
             file_name: seed_profile[1],
             file_extension: config_list[5],
+            last_scraped: match seed_profile[3].is_empty() {
+                true => None,
+                false => Some(String::from(seed_profile[3])),
+            },
+            indicator: config_list[6],
         })
     }
 }
@@ -33,12 +43,16 @@ impl WebNovel<'_> {
 // Given a chapter html page, extract the link to the following chapter.
 // Will return None if there are not two of the chosen selector.
 // Meant to be run on pages with links to both previous and next chapters.
-pub fn addr_next_chapter<'a>(html: &'a Html, selector: &'a Selector) -> Option<&'a str> {
-    html
-        .select(selector)
-        .nth(1)?
-        .value()
-        .attr("href")
+pub fn addr_next_chapter<'a>(html: &'a Html, selector: &'a Selector, indicator: &'a str) 
+-> Option<&'a str> {
+    for addr in html.select(selector) {
+        if addr.value().attr("href").is_some() {
+            if addr.html().as_str().contains(indicator) {
+                return addr.value().attr("href");
+            }
+        }
+    }
+    return None;
 }
 
 
@@ -51,3 +65,4 @@ pub fn extract_target(html: &Html, selector: &Selector) -> Option<String> {
         .next()?
         .html())
 }
+
