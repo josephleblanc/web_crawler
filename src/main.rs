@@ -1,6 +1,4 @@
 // To Do:
-// -Clean up update_last_scraped() in lib.rs
-//      I don't think it needs to collect into String half-way through, test it
 // -Actually do proper error handling (once I know better what that means).
 // -Write some clever tests (once I know how to do that).
 // -Prompt user to enter address of seed page
@@ -137,9 +135,6 @@ fn crawl(mut webnovel: WebNovel, output_file: &str) -> Result<(), Box<dyn Error>
         file.write_all(body.as_bytes()).unwrap();
 
         update_last_scraped(&webnovel);
-
-
-//        let seed_file = fs::read_to_string("../config/seeds.txt").unwrap();
 
         chapter_tail = addr_next_chapter(&html, &webnovel.addr_next_chapter_btn,
                                          &webnovel.indicator);

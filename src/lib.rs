@@ -24,7 +24,8 @@ pub struct WebNovel <'a> {
 }
 
 impl WebNovel<'_> {
-    pub fn new_from_config<'b>(seed_profile: &[&'b str], config_list: &[&'b str]) -> Option<WebNovel<'b>> {
+    pub fn new_from_config<'b>(seed_profile: &[&'b str], config_list: &[&'b str]) 
+    -> Option<WebNovel<'b>> {
         Some(WebNovel {
             website_name : seed_profile[0],
             seed: seed_profile[2],
@@ -73,27 +74,25 @@ pub fn extract_target(html: &Html, selector: &Selector) -> Option<String> {
 // Updates ../config/seeds.txt with the address of the last scraped page.
 // Every time a new page is scraped, seeds.txt is updated, so an early
 // interrupt will at worst result in one chapter duplicated the next time
-// the program is run..
+// the program is run. <-- not sure if max duplicated is really 1 chapter
 pub fn update_last_scraped<'a>(webnovel: &'a WebNovel) -> () {
     let last_scraped = match &webnovel.last_scraped {
         None => "",
         Some(addr) => addr,
     };
+
     let seed_file = fs::read_to_string("../config/seeds.txt");
     let seed_list: String = seed_file.unwrap()
         .trim()
         .trim_end_matches(',')
         .split(",\n")
         .filter(|seed_profile| !seed_profile.is_empty())
-        .map(|seed_profile| seed_profile.split(',').collect::<Vec<&str>>())
-        .collect::<Vec<Vec<&str>>>()
-        .iter()
-        .map(|seed_profile| seed_profile.iter()
+        .map(|seed_profile| seed_profile.split(',')
              .enumerate()
              .flat_map(|(i, elem)|
                        match (i, elem) {
                         (3, _) => [last_scraped, ","],
-                        (_, _) => [*elem, ","]
+                        (_, _) => [elem, ","]
                        })
              .collect::<String>())
         .flat_map(|seed_profile| [seed_profile, "\n".to_string()])
