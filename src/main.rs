@@ -1,5 +1,6 @@
 // To Do:
-// -Make it possible to update chapters instead of redownloading each time.
+// -Clean up update_last_scraped() in lib.rs
+//      I don't think it needs to collect into String half-way through, test it
 // -Actually do proper error handling (once I know better what that means).
 // -Write some clever tests (once I know how to do that).
 // -Prompt user to enter address of seed page
@@ -20,7 +21,8 @@ use scraper::Html;
 use web_crawler::{
     addr_next_chapter, 
     extract_target, 
-    WebNovel};
+    WebNovel,
+    update_last_scraped};
 
 // Given seeds of the pattern <royal road><path to first chapter> from config
 // file ../config/seeds.txt and page templates from ../config/page_templates.txt, 
@@ -111,7 +113,7 @@ fn crawl(mut webnovel: WebNovel, output_file: &str) -> Result<(), Box<dyn Error>
         chapter_tail = addr_next_chapter(&html, &webnovel.addr_next_chapter_btn,
                                          &webnovel.indicator);
     } else {
-        html = Html::parse_fragment(&reqwest::blocking::get(webnovel.last_scraped.unwrap())?
+        html = Html::parse_fragment(&reqwest::blocking::get(webnovel.last_scraped.as_ref().unwrap())?
             .text()?);
         chapter_tail = addr_next_chapter(&html, &webnovel.addr_next_chapter_btn,
                                          &webnovel.indicator);
@@ -134,10 +136,15 @@ fn crawl(mut webnovel: WebNovel, output_file: &str) -> Result<(), Box<dyn Error>
             .unwrap();
         file.write_all(body.as_bytes()).unwrap();
 
+        update_last_scraped(&webnovel);
+
+
+//        let seed_file = fs::read_to_string("../config/seeds.txt").unwrap();
+
         chapter_tail = addr_next_chapter(&html, &webnovel.addr_next_chapter_btn,
                                          &webnovel.indicator);
         webnovel.last_scraped = Some(String::from(&addr_chapter));
-        println!("webnovel.last_scraped: {}", webnovel.last_scraped.unwrap());
+        println!("webnovel.last_scraped: {}", webnovel.last_scraped.as_ref().unwrap());
         println!("file size: {}", fs::metadata(output_file).unwrap().len());
         if debug { println!("chapter_tail:{:?}", chapter_tail); }
         thread::sleep(sleep_time);

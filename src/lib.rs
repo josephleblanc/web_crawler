@@ -3,9 +3,12 @@
 // this needs to be different than the function extracting each following chapter.
 
 use scraper::{Html, Selector};
+use std::fs;
+use std::io::Write;
 
 #[derive(Debug)]
 pub struct WebNovel <'a> {
+    pub website_name: &'a str,
     pub base_page: &'a str,
     pub seed: &'a str,
     pub addr_next_chapter_btn: Selector,
@@ -23,6 +26,7 @@ pub struct WebNovel <'a> {
 impl WebNovel<'_> {
     pub fn new_from_config<'b>(seed_profile: &[&'b str], config_list: &[&'b str]) -> Option<WebNovel<'b>> {
         Some(WebNovel {
+            website_name : seed_profile[0],
             seed: seed_profile[2],
             base_page: config_list[1],
             addr_next_chapter_btn: Selector::parse(config_list[2]).unwrap(),
@@ -66,3 +70,39 @@ pub fn extract_target(html: &Html, selector: &Selector) -> Option<String> {
         .html())
 }
 
+// Updates ../config/seeds.txt with the address of the last scraped page.
+// Every time a new page is scraped, seeds.txt is updated, so an early
+// interrupt will at worst result in one chapter duplicated the next time
+// the program is run..
+pub fn update_last_scraped<'a>(webnovel: &'a WebNovel) -> () {
+    let last_scraped = match &webnovel.last_scraped {
+        None => "",
+        Some(addr) => addr,
+    };
+    let seed_file = fs::read_to_string("../config/seeds.txt");
+    let seed_list: String = seed_file.unwrap()
+        .trim()
+        .trim_end_matches(',')
+        .split(",\n")
+        .filter(|seed_profile| !seed_profile.is_empty())
+        .map(|seed_profile| seed_profile.split(',').collect::<Vec<&str>>())
+        .collect::<Vec<Vec<&str>>>()
+        .iter()
+        .map(|seed_profile| seed_profile.iter()
+             .enumerate()
+             .flat_map(|(i, elem)|
+                       match (i, elem) {
+                        (3, _) => [last_scraped, ","],
+                        (_, _) => [*elem, ","]
+                       })
+             .collect::<String>())
+        .flat_map(|seed_profile| [seed_profile, "\n".to_string()])
+        .collect();
+
+    let mut file = fs::OpenOptions::new()
+        .create(true)
+        .write(true)
+        .open("../config/seeds.txt")
+        .unwrap();
+    file.write_all(seed_list.as_bytes()).unwrap();
+}
