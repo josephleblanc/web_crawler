@@ -109,12 +109,12 @@ fn crawl(mut webnovel: WebNovel, output_file: &str) -> Result<(), Box<dyn Error>
             .unwrap();
         file.write_all(body.as_bytes()).unwrap();
         chapter_tail = addr_next_chapter(&html, &webnovel.addr_next_chapter_btn,
-                                         &webnovel.indicator);
+                                         webnovel.indicator);
     } else {
         html = Html::parse_fragment(&reqwest::blocking::get(webnovel.last_scraped.as_ref().unwrap())?
             .text()?);
         chapter_tail = addr_next_chapter(&html, &webnovel.addr_next_chapter_btn,
-                                         &webnovel.indicator);
+                                         webnovel.indicator);
     }
 
     if debug { println!("chapter_tail:{:?}", chapter_tail); }
@@ -137,7 +137,7 @@ fn crawl(mut webnovel: WebNovel, output_file: &str) -> Result<(), Box<dyn Error>
         update_last_scraped(&webnovel);
 
         chapter_tail = addr_next_chapter(&html, &webnovel.addr_next_chapter_btn,
-                                         &webnovel.indicator);
+                                         webnovel.indicator);
         webnovel.last_scraped = Some(String::from(&addr_chapter));
         println!("webnovel.last_scraped: {}", webnovel.last_scraped.as_ref().unwrap());
         println!("file size: {}", fs::metadata(output_file).unwrap().len());

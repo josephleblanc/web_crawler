@@ -51,13 +51,11 @@ impl WebNovel<'_> {
 pub fn addr_next_chapter<'a>(html: &'a Html, selector: &'a Selector, indicator: &'a str) 
 -> Option<&'a str> {
     for addr in html.select(selector) {
-        if addr.value().attr("href").is_some() {
-            if addr.html().as_str().contains(indicator) {
-                return addr.value().attr("href");
-            }
+        if addr.value().attr("href").is_some() && addr.html().as_str().contains(indicator) {
+            return addr.value().attr("href");
         }
     }
-    return None;
+    None
 }
 
 
@@ -75,7 +73,7 @@ pub fn extract_target(html: &Html, selector: &Selector) -> Option<String> {
 // Every time a new page is scraped, seeds.txt is updated, so an early
 // interrupt will at worst result in one chapter duplicated the next time
 // the program is run. <-- not sure if max duplicated is really 1 chapter
-pub fn update_last_scraped<'a>(webnovel: &'a WebNovel) -> () {
+pub fn update_last_scraped(webnovel: &WebNovel) {
     let last_scraped = match &webnovel.last_scraped {
         None => "",
         Some(addr) => addr,
