@@ -21,3 +21,11 @@ a[class="btn_theodoi btn_doc"]
 ../web_novels/
 .html
 NEXT CHAPTER
+
+wordpress
+https://parahumans.wordpress.com
+a[rel="next"]
+div[class="entry-content"]
+../web_novels/
+.html
+Next

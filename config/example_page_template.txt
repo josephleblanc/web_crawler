@@ -1,0 +1,7 @@
+website_name
+<website> (for example, https://www.royalroad.com)
+next button
+content div identifier
+directory
+extension
+next button link text

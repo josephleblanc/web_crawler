@@ -7,7 +7,7 @@ use std::fs;
 use std::io::Write;
 
 #[derive(Debug)]
-pub struct WebNovel <'a> {
+pub struct WebNovel<'a> {
     pub website_name: &'a str,
     pub base_page: &'a str,
     pub seed: &'a str,
@@ -24,10 +24,12 @@ pub struct WebNovel <'a> {
 }
 
 impl WebNovel<'_> {
-    pub fn new_from_config<'b>(seed_profile: &[&'b str], config_list: &[&'b str]) 
-    -> Option<WebNovel<'b>> {
+    pub fn new_from_config<'b>(
+        seed_profile: &[&'b str],
+        config_list: &[&'b str],
+    ) -> Option<WebNovel<'b>> {
         Some(WebNovel {
-            website_name : seed_profile[0],
+            website_name: seed_profile[0],
             seed: seed_profile[2],
             base_page: config_list[1],
             addr_next_chapter_btn: Selector::parse(config_list[2]).unwrap(),
@@ -44,12 +46,14 @@ impl WebNovel<'_> {
     }
 }
 
-
 // Given a chapter html page, extract the link to the following chapter.
 // Will return None if there are not two of the chosen selector.
 // Meant to be run on pages with links to both previous and next chapters.
-pub fn addr_next_chapter<'a>(html: &'a Html, selector: &'a Selector, indicator: &'a str) 
--> Option<&'a str> {
+pub fn addr_next_chapter<'a>(
+    html: &'a Html,
+    selector: &'a Selector,
+    indicator: &'a str,
+) -> Option<&'a str> {
     for addr in html.select(selector) {
         if addr.value().attr("href").is_some() && addr.html().as_str().contains(indicator) {
             return addr.value().attr("href");
@@ -58,15 +62,11 @@ pub fn addr_next_chapter<'a>(html: &'a Html, selector: &'a Selector, indicator: 
     None
 }
 
-
 // Given a chapter html page, extract the story text as formatted html.
 pub fn extract_target(html: &Html, selector: &Selector) -> Option<String> {
-//    let inner_chapter: Selector = Selector::parse(r#"div[class="chapter-inner chapter-content"]"#).unwrap();
+    //    let inner_chapter: Selector = Selector::parse(r#"div[class="chapter-inner chapter-content"]"#).unwrap();
 
-    Some(html
-        .select(selector)
-        .next()?
-        .html())
+    Some(html.select(selector).next()?.html())
 }
 
 // Updates ../config/seeds.txt with the address of the last scraped page.
@@ -80,19 +80,22 @@ pub fn update_last_scraped(webnovel: &WebNovel) {
     };
 
     let seed_file = fs::read_to_string("../config/seeds.txt");
-    let seed_list: String = seed_file.unwrap()
+    let seed_list: String = seed_file
+        .unwrap()
         .trim()
         .trim_end_matches(',')
         .split(",\n")
         .filter(|seed_profile| !seed_profile.is_empty())
-        .map(|seed_profile| seed_profile.split(',')
-             .enumerate()
-             .flat_map(|(i, elem)|
-                       match (i, elem) {
-                        (3, _) => [last_scraped, ","],
-                        (_, _) => [elem, ","]
-                       })
-             .collect::<String>())
+        .map(|seed_profile| {
+            seed_profile
+                .split(',')
+                .enumerate()
+                .flat_map(|(i, elem)| match (i, elem) {
+                    (3, _) => [last_scraped, ","],
+                    (_, _) => [elem, ","],
+                })
+                .collect::<String>()
+        })
         .flat_map(|seed_profile| [seed_profile, "\n".to_string()])
         .collect();
 
